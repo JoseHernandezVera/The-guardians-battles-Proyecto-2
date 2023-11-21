@@ -79,7 +79,6 @@ void readGuardiansFile(vector<Guardian>& guardians) {
     }
 }
 
-// Función principal del menú
 int main() {
     vector<City> citiesVector;
     vector<Guardian> guardians;
@@ -149,5 +148,3 @@ int main() {
 
     return 0;
 }
-
-
