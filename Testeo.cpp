@@ -43,6 +43,8 @@ struct Graph {
     TreeNode* searchBinaryTreeNode(int power);
     TreeNode* searchBinaryTreeNodeRecursive(TreeNode* node, int power);
     void traverseBinaryTreePreorder(TreeNode* node);
+    void traverseBinaryTreeInorder(TreeNode* node);  // Agregada aquí
+    void traverseBinaryTreePostorder(TreeNode* node);  // Agregada aquí
 
     // Funciones para gestionar el grafo
     void addEdge(const string& city1, const string& city2);
@@ -133,6 +135,22 @@ void Graph::traverseBinaryTreePreorder(TreeNode* node) {
         traverseBinaryTreePreorder(node->right);  // Recorrer el subárbol derecho primero
         cout << "Nombre: " << node->guardian.name << " | Poder: " << node->guardian.power << endl;
         traverseBinaryTreePreorder(node->left);   // Luego recorrer el subárbol izquierdo
+    }
+}
+
+void Graph::traverseBinaryTreeInorder(TreeNode* node) {
+    if (node != nullptr) {
+        traverseBinaryTreeInorder(node->left);
+        cout << "Nombre: " << node->guardian.name << " | Poder: " << node->guardian.power << endl;
+        traverseBinaryTreeInorder(node->right);
+    }
+}
+
+void Graph::traverseBinaryTreePostorder(TreeNode* node) {
+    if (node != nullptr) {
+        traverseBinaryTreePostorder(node->left);
+        traverseBinaryTreePostorder(node->right);
+        cout << "Nombre: " << node->guardian.name << " | Poder: " << node->guardian.power << endl;
     }
 }
 
@@ -240,9 +258,17 @@ int main() {
                 // Lógica para ver al guardian
                 cout << "Mostrar al guardian" << endl;
 
-                // Recorrer el árbol binario en preorden
-                cout << "\nRecorrido del arbol binario en preorden:\n";
-                graph.traverseBinaryTreePreorder(graph.binaryTreeRoot);
+                    // Recorrer el árbol binario en preorden
+				    cout << "\nRecorrido del arbol binario en preorden:\n";
+				    graph.traverseBinaryTreePreorder(graph.binaryTreeRoot);
+				
+				    // Recorrer el árbol binario en inorden
+				    cout << "\nRecorrido del arbol binario en inorden:\n";
+				    graph.traverseBinaryTreeInorder(graph.binaryTreeRoot);
+				
+				    // Recorrer el árbol binario en postorden
+				    cout << "\nRecorrido del arbol binario en postorden:\n";
+				    graph.traverseBinaryTreePostorder(graph.binaryTreeRoot);
                 break;
 
             case 3:
