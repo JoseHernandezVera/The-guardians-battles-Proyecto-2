@@ -40,7 +40,7 @@ Uso del Juego
 El usuario puede interactuar con el juego seleccionando opciones en el menú principal. Puede explorar la información sobre los guardianes, conocer la jerarquía de poder, participar en batallas simuladas y más.
 
 ## Compilación y Ejecución
-El código está escrito en C++. Para compilar, utiliza un compilador C++ los cuales son recomendables Dev C++ y VisualSturidoCode. Asegúrese de tener un entorno de desarrollo C++ configurado, debido a que Dev C++ de aveces da problemas con los "for" debido a que dice que el compilador no lo acepta o es entiguo en caso de salir eso debera ir a:
+Para poder jugar este juego debera descargar esta carpeta y no debe mover ningun archivo de adentro y debe tener en cuenta que el código está escrito en C++. Para compilar, debe utiliza un compilador C++ el cual recominedo Dev C++. Asegúrese de tener un entorno de desarrollo C++ configurado, debido a que Dev C++ aveces da problemas con los "for" debido a que dice que el compilador no lo acepta o es entiguo y en caso de salir estas cosas debera ir a la esquina izquierda y dar click a:
 ##### Herramientas > Opciones del compilador > Compilador 
 ##### Ahi debera marcar la casilla de "Añadir los siguientes comandos cuando llama al compilador" y cambiar en la casilla grande que esta debajo de la cansilla antes mencionada y debera borrar el texto que tenga escrito y escribir "-std=c++11"
 y una vez resuelto este problema solo debe ejecutar el programa.
