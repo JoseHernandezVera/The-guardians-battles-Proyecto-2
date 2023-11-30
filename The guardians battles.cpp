@@ -251,8 +251,6 @@ public:
             for (const auto& apprentice : cityGuardianTree->apprentices) {
                 cout << "- " << apprentice->guardian.name << endl;
             }
-
-            cout << "-------------------------------------" << endl;
             cout << "Guardianes disponibles para la batalla:" << endl;
 
             // Mostrar la lista de guardianes disponibles con su índice
@@ -290,7 +288,7 @@ public:
                     powerTree = deleteNodeFromBST(powerTree, chosenGuardian);
                 }
             } else {
-                cout << "Numero de guardián no válido." << endl;
+                cout << "Numero de guardian no válido." << endl;
             }
         } else {
             cout << "No hay guardianes en esta ciudad." << endl;
@@ -372,7 +370,7 @@ void readGuardiansFile(vector<Guardian>& guardians) {
 
 void insertNode(TreeNode*& root, Guardian guardian) {
     if (!root) {
-        root = new TreeNode(guardian, true); // El primer guardián es siempre un maestro
+        root = new TreeNode(guardian, true); // El primer guardian es siempre un maestro
         return;
     }
 
@@ -401,9 +399,9 @@ void displayHierarchy(TreeNode* root, int nivel) {
         }
         cout << "- " << root->guardian.name << " (" << root->guardian.city << ")\n";
 
-        // Llamada recursiva para imprimir los hermanos del guardián actual
+        // Llamada recursiva para imprimir los hermanos del guardian actual
         displayHierarchy(root->left, nivel + 1);
-        // Llamada recursiva para imprimir los aprendices del guardián actual
+        // Llamada recursiva para imprimir los aprendices del guardian actual
         displayHierarchy(root->right, nivel + 1);
     }
 }
@@ -542,9 +540,9 @@ void presenciarBatalla(UndirectedGraph& graph, vector<Guardian>& guardians) {
         cout << i + 1 << ". " << eligibleGuardians[i].name << " - Poder: " << eligibleGuardians[i].power << " - Ciudad: " << eligibleGuardians[i].city << endl;
     }
 
-    // Solicitar al usuario que ingrese el índice del guardián para la batalla
+    // Solicitar al usuario que ingrese el índice del guardian para la batalla
     int chosenGuardianIndex;
-    cout << "Ingrese el numero del guardián que desea para la batalla: ";
+    cout << "Ingrese el numero del guardian que desea para la batalla: ";
     cin >> chosenGuardianIndex;
 
     // Verificar si el índice es válido
@@ -568,7 +566,7 @@ void presenciarBatalla(UndirectedGraph& graph, vector<Guardian>& guardians) {
 
         // Solicitar al usuario que elija el campeón local
         int localChampionIndex;
-        cout << "Elige el numero del guardián local para la batalla: ";
+        cout << "Elige el numero del guardian local para la batalla: ";
         cin >> localChampionIndex;
 
         // Verificar si el índice del campeón local es válido
@@ -619,10 +617,10 @@ void presenciarBatalla(UndirectedGraph& graph, vector<Guardian>& guardians) {
                 }
             }
         } else {
-            cout << "Numero del guardián local no válido. Batalla cancelada." << endl;
+            cout << "Numero del guardian local no válido. Batalla cancelada." << endl;
         }
     } else {
-        cout << "Numero de guardián no válido. Batalla cancelada." << endl;
+        cout << "Numero de guardian no válido. Batalla cancelada." << endl;
     }
 }
 
@@ -640,6 +638,8 @@ int main() {
     for (const auto& guardian : guardians) {
         insertNode(rankingTree, guardian);
     }
+    
+    cout << "BIENVENIDO A THE GUARDIANS BATTLES\nTHE GAME\n";
 	
 	
 	do{
