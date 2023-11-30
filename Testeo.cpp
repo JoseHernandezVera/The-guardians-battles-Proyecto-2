@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <queue>
-#include <algorithm>
 
 using namespace std;
 
@@ -23,153 +21,296 @@ struct Guardian {
 
 struct TreeNode {
     Guardian guardian;
-    TreeNode* left;
-    TreeNode* right;
-
-    TreeNode(const Guardian& g) : guardian(g), left(nullptr), right(nullptr) {}
+    TreeNode* left;    // Maestro
+    TreeNode* right;   // Aprendiz
+    bool isMaster;     // Bandera que indica si el nodo es un maestro
+    TreeNode(Guardian g, bool isMaster) : guardian(g), left(nullptr), right(nullptr), isMaster(isMaster) {}
 };
 
-// Estructura para representar el grafo dirigido
-struct Graph {
-    unordered_map<string, vector<string>> adjacencyList;
-    TreeNode* binaryTreeRoot;
+class GuardianTreeNode {
+public:
+    Guardian guardian;
+    vector<GuardianTreeNode*> apprentices;
+    GuardianTreeNode* master;
 
-    // Constructor para inicializar la raíz del árbol binario
-    Graph() : binaryTreeRoot(nullptr) {}
-
-    // Funciones para gestionar el árbol binario
-    void addBinaryTreeNode(const Guardian& guardian);
-    TreeNode* addBinaryTreeNodeRecursive(TreeNode* node, const Guardian& guardian);
-    TreeNode* searchBinaryTreeNode(int power);
-    TreeNode* searchBinaryTreeNodeRecursive(TreeNode* node, int power);
-    void traverseBinaryTreePreorder(TreeNode* node);
-    void traverseBinaryTreeInorder(TreeNode* node);  // Agregada aquí
-    void traverseBinaryTreePostorder(TreeNode* node);  // Agregada aquí
-
-    // Funciones para gestionar el grafo
-    void addEdge(const string& city1, const string& city2);
-    bool hasEdge(const string& city1, const string& city2);
-    bool hasPath(const string& startCity, const string& endCity);
+    GuardianTreeNode(const Guardian& g) : guardian(g), master(nullptr) {}
 };
 
-void Graph::addEdge(const string& city1, const string& city2) {
-    adjacencyList[city1].push_back(city2);
-    adjacencyList[city2].push_back(city1);
-}
+class Node {
+public:
+    Guardian guardian;
+    Node* left;
+    Node* right;
 
-bool Graph::hasEdge(const string& city1, const string& city2) {
-    auto it = adjacencyList.find(city1);
-    if (it != adjacencyList.end()) {
-        return std::find(it->second.begin(), it->second.end(), city2) != it->second.end();
+    Node(Guardian g) : guardian(g), left(nullptr), right(nullptr) {}
+};
+
+class UndirectedGraph {
+private:
+    unordered_map<string, int> cityIndexMap;
+    vector<vector<int>> adjacencyMatrix;
+    vector<string> cities;
+    unordered_map<string, GuardianTreeNode*> cityGuardianTrees; // Nuevo mapa para árboles de guardianes
+    unordered_map<string, GuardianTreeNode*> cityMasterTrees;
+
+public:
+    UndirectedGraph() = default;
+
+    void addEdge(const string& src, const string& dest, int weight) {
+        int srcIndex = getIndex(src);
+        int destIndex = getIndex(dest);
+
+        adjacencyMatrix[srcIndex][destIndex] = weight;
+        adjacencyMatrix[destIndex][srcIndex] = weight; 
     }
-    return false;
+	Node* deleteNodeFromBST(Node* root, const Guardian& guardian) {
+    if (root == nullptr) {
+        return root;
+    } else if (guardian.power < root->guardian.power) {
+        root->left = deleteNodeFromBST(root->left, guardian);
+    } else if (guardian.power > root->guardian.power) {
+        root->right = deleteNodeFromBST(root->right, guardian);
+    } else {
+        if (root->left == nullptr && root->right == nullptr) {
+            delete root;
+            root = nullptr;
+        } else if (root->left == nullptr) {
+            Node* temp = root;
+            root = root->right;
+            delete temp;
+        } else if (root->right == nullptr) {
+            Node* temp = root;
+            root = root->left;
+            delete temp;
+        } else {
+            Node* temp = findMin(root->right);
+            root->guardian = temp->guardian;
+            root->right = deleteNodeFromBST(root->right, temp->guardian);
+        }
+    }
+    return root;
 }
+	Node* findMin(Node* root) {
+    	if (root == nullptr) {
+        	return nullptr;
+    	}
+    	while (root->left != nullptr) {
+    	    root = root->left;
+    	}
+    	return root;
+	}
 
-bool Graph::hasPath(const string& startCity, const string& endCity) {
-    unordered_map<string, bool> visited;
-    queue<string> q;
-    q.push(startCity);
+    size_t getNumberOfCities() const {
+        return cities.size();
+    }
 
-    while (!q.empty()) {
-        string currentCity = q.front();
-        q.pop();
-
-        if (currentCity == endCity) {
-            return true;  // Se encontró un camino
+    // Obtener el nombre de una ciudad por su índice
+    string getCityName(size_t index) const {
+        if (index < cities.size()) {
+            return cities[index];
         }
+        return "";
+    }
 
-        if (visited[currentCity]) {
-            continue;  // Evitar ciclos
+    int getIndex(const string& city) {
+        if (cityIndexMap.find(city) == cityIndexMap.end()) {
+            int newIndex = cities.size();
+            cities.push_back(city);
+            cityIndexMap[city] = newIndex;
+
+            // Ajustar la matriz de adyacencia al tamaño correcto
+            for (auto& row : adjacencyMatrix) {
+                row.resize(cities.size(), 0);
+            }
+            adjacencyMatrix.resize(cities.size(), vector<int>(cities.size(), 0));
+
+            return newIndex;
         }
+        return cityIndexMap[city];
+    }
+    //Funcion para imprimir la ciudad ->Sus conexiones
+    void printDetailedGraph() {
+        cout << "\nCiudades y sus conexiones:\n" << endl;
+        for (size_t i = 0; i < cities.size(); ++i) 
+        {
+            cout << cities[i] << ", Sus conexiones: ";
+            bool hasConnection = false;
+            for (size_t j = 0; j < cities.size(); ++j) {
+                if (adjacencyMatrix[i][j] != 0) {
+                    if (hasConnection) {
+                        cout << ", ";
+                    }
+                    cout << cities[j];
+                    hasConnection = true;
+                }
+            }
+            if (!hasConnection) {
+                cout << "Ninguna conexion";
+            }
+            cout << endl;
+        }
+    }
 
-        visited[currentCity] = true;
+    void printCityConnections(const string& city) {
+        int cityIndex = getIndex(city);
 
-        auto it = adjacencyList.find(currentCity);
-        if (it != adjacencyList.end()) {
-            for (const string& neighbor : it->second) {
-                q.push(neighbor);
+        cout << city << " conectada a: ";
+        bool hasConnection = false;
+        for (size_t i = 0; i < cities.size(); ++i) {
+            if (adjacencyMatrix[cityIndex][i] != 0) {
+                cout << cities[i] << " | ";
+                hasConnection = true;
             }
         }
+        if (!hasConnection) {
+            cout << "Ninguna conexion";
+        }
+        cout << endl;
+    }
+    void addGuardianToCity(const string& city, const Guardian& guardian) {
+        if (cityGuardianTrees.find(city) == cityGuardianTrees.end()) {
+            cityGuardianTrees[city] = new GuardianTreeNode(guardian);
+        } else {
+            addApprentice(cityGuardianTrees[city], new GuardianTreeNode(guardian));
+        }
     }
 
-    return false;  // No se encontró un camino
-}
+    void printGuardiansInCity(const string& city, const vector<Guardian>& guardians) {
+        cout << "Guardianes en la ciudad de " << city << ":" << endl;
 
-void Graph::addBinaryTreeNode(const Guardian& guardian) {
-    binaryTreeRoot = addBinaryTreeNodeRecursive(binaryTreeRoot, guardian);
-}
+        if (cityGuardianTrees.find(city) != cityGuardianTrees.end()) {
+            GuardianTreeNode* cityGuardianTree = cityGuardianTrees[city];
 
-TreeNode* Graph::addBinaryTreeNodeRecursive(TreeNode* node, const Guardian& guardian) {
-    if (node == nullptr) {
-        return new TreeNode(guardian);
+            // Imprimir el maestro y sus aprendices en la ciudad
+            cout << "Maestro: " << cityGuardianTree->guardian.name << endl;
+            for (const auto& apprentice : cityGuardianTree->apprentices) {
+                cout << "- " << apprentice->guardian.name << endl;
+            }
+
+            // Imprimir los maestros de los aprendices en la misma ciudad
+            for (const auto& apprentice : cityGuardianTree->apprentices) {
+                for (const auto& guardian : guardians) {
+                    if (guardian.name == apprentice->guardian.master && guardian.city == city) {
+                        cout << "Maestro de " << apprentice->guardian.name << ": " << guardian.name << endl;
+                        break;
+                    }
+                }
+            }
+        } else {
+            cout << "No hay guardianes en esta ciudad." << endl;
+        }
     }
+    vector<string> getConnectedCities(const string& city) {
+        vector<string> connectedCities;
+        int cityIndex = getIndex(city);
 
-    if (guardian.power < node->guardian.power) {
-        node->left = addBinaryTreeNodeRecursive(node->left, guardian);
-    } else {
-        node->right = addBinaryTreeNodeRecursive(node->right, guardian);
+        cout << "Ciudades conectadas a " << city << ":" << endl;
+        for (size_t i = 0; i < cities.size(); ++i) {
+            if (adjacencyMatrix[cityIndex][i] != 0) {
+                connectedCities.push_back(cities[i]);
+                cout << cities[i] << endl;
+            }
+        }
+
+        return connectedCities;
     }
-
-    return node;
-}
-
-TreeNode* Graph::searchBinaryTreeNode(int power) {
-    return searchBinaryTreeNodeRecursive(binaryTreeRoot, power);
-}
-
-TreeNode* Graph::searchBinaryTreeNodeRecursive(TreeNode* node, int power) {
-    if (node == nullptr || node->guardian.power == power) {
-        return node;
+  
+     // Función para obtener el árbol general de guardianes de una ciudad específica
+    GuardianTreeNode* getMasterTreeOfCity(const string& city) {
+        if (cityMasterTrees.find(city) != cityMasterTrees.end()) {
+            return cityMasterTrees[city];
+        }
+        return nullptr;
     }
+    bool isConnected(const string& cityA, const string& cityB) {
+        int indexA = getIndex(cityA);
+        int indexB = getIndex(cityB);
 
-    if (power < node->guardian.power) {
-        return searchBinaryTreeNodeRecursive(node->left, power);
+        if (adjacencyMatrix[indexA][indexB] != 0 || adjacencyMatrix[indexB][indexA] != 0) {
+            cout << cityA << " y " << cityB << " estan conectadas directamente." << endl;
+            return true;
+        } else {
+            cout << cityA << " y " << cityB << " no estan conectadas directamente." << endl;
+            return false;
+        }
     }
+    
+   void printGuardiansInCityWithOpponent(const string& city, vector<Guardian>& guardians, Node*& powerTree) {
+    cout << "Guardianes en la ciudad de " << city << ":" << endl;
 
-    return searchBinaryTreeNodeRecursive(node->right, power);
-}
+        Guardian chosenGuardian;
+        if (cityGuardianTrees.find(city) != cityGuardianTrees.end()) {
+            GuardianTreeNode* cityGuardianTree = cityGuardianTrees[city];
 
-void Graph::traverseBinaryTreePreorder(TreeNode* node) {
-    if (node != nullptr) {
-        // Procesar el nodo actual antes de sus hijos
-        traverseBinaryTreePreorder(node->right);  // Recorrer el subárbol derecho primero
-        cout << "Nombre: " << node->guardian.name << " | Poder: " << node->guardian.power << endl;
-        traverseBinaryTreePreorder(node->left);   // Luego recorrer el subárbol izquierdo
+            // Imprimir el maestro y sus aprendices en la ciudad
+            cout << "Maestro: " << cityGuardianTree->guardian.name << endl;
+            for (const auto& apprentice : cityGuardianTree->apprentices) {
+                cout << "- " << apprentice->guardian.name << endl;
+            }
+
+            cout << "-------------------------------------" << endl;
+            cout << "Guardianes disponibles para la batalla:" << endl;
+
+            // Mostrar la lista de guardianes disponibles con su índice
+            cout << "1) " << cityGuardianTree->guardian.name << "(Maestro)" << endl;
+            int index = 2;
+            for (const auto& apprentice : cityGuardianTree->apprentices) {
+                cout << index << ") " << apprentice->guardian.name << "(Aprendiz)" << endl;
+                index++;
+            }
+
+            cout << "Elige el numero del guardian para la batalla: ";
+            int chosenOpponentIndex;
+            cin >> chosenOpponentIndex;
+
+            int totalGuardiansInCity = cityGuardianTree->apprentices.size() + 1;
+
+            if (chosenOpponentIndex >= 1 && chosenOpponentIndex <= totalGuardiansInCity) {
+                int battleResult = 0;
+                if (chosenOpponentIndex == 1) {
+                    // Lógica para pelear con el Maestro
+                    cout << "Has elegido pelear contra el Maestro: " << cityGuardianTree->guardian.name << "!" << endl;
+                    // Asignar puntos al elegir pelear contra el Maestro
+                    battleResult = 5;
+                    chosenGuardian = cityGuardianTree->guardian;
+                } else {
+                    // Lógica para pelear con el Aprendiz
+                    chosenGuardian = cityGuardianTree->apprentices[chosenOpponentIndex - 2]->guardian;
+                    cout << "¡Has elegido pelear contra: " << chosenGuardian.name << "!" << endl;
+                    // Asignar puntos al elegir pelear contra un Aprendiz
+                    battleResult = 3;
+                }
+            } else {
+                cout << "Número de guardián no válido." << endl;
+            }
+        } else {
+            cout << "No hay guardianes en esta ciudad." << endl;
+        }
     }
-}
-
-void Graph::traverseBinaryTreeInorder(TreeNode* node) {
-    if (node != nullptr) {
-        traverseBinaryTreeInorder(node->left);
-        cout << "Nombre: " << node->guardian.name << " | Poder: " << node->guardian.power << endl;
-        traverseBinaryTreeInorder(node->right);
-    }
-}
-
-void Graph::traverseBinaryTreePostorder(TreeNode* node) {
-    if (node != nullptr) {
-        traverseBinaryTreePostorder(node->left);
-        traverseBinaryTreePostorder(node->right);
-        cout << "Nombre: " << node->guardian.name << " | Poder: " << node->guardian.power << endl;
-    }
-}
+    private:
+        // Función para insertar un aprendiz bajo un maestro en el árbol general
+        void addApprentice(GuardianTreeNode* master, GuardianTreeNode* apprentice) {
+            apprentice->master = master;
+            master->apprentices.push_back(apprentice);
+        }
+};
 
 // Funciones para leer archivos
-void readCitiesFile(vector<City>& citiesVector, Graph& graph) {
+void readCitiesFile(UndirectedGraph& graph, std::vector<City>& citiesVector) {
     ifstream citiesFile("cities.conf.txt");
 
     if (citiesFile.is_open()) {
         string line;
         while (getline(citiesFile, line)) {
-            size_t pos = line.find(", ");
+            size_t pos = line.find(",");
             string cityName = line.substr(0, pos);
-            string connectedCitiesStr = line.substr(pos + 2);
+            string connectedCitiesStr = line.substr(pos + 1);
             vector<string> connectedCities;
 
             size_t commaPos;
-            while ((commaPos = connectedCitiesStr.find(", ")) != string::npos) {
+            while ((commaPos = connectedCitiesStr.find(",")) != string::npos) {
                 connectedCities.push_back(connectedCitiesStr.substr(0, commaPos));
-                connectedCitiesStr = connectedCitiesStr.substr(commaPos + 2);
+                connectedCitiesStr = connectedCitiesStr.substr(commaPos + 1);
             }
 
             connectedCities.push_back(connectedCitiesStr);
@@ -180,18 +321,18 @@ void readCitiesFile(vector<City>& citiesVector, Graph& graph) {
 
             citiesVector.push_back(city);
 
-            // Agregar aristas al grafo
+            // Agregar las conexiones al grafo
             for (const auto& connectedCity : connectedCities) {
-                graph.addEdge(cityName, connectedCity);
+                graph.addEdge(cityName, connectedCity, 1);  // Peso de conexión 1
             }
         }
         citiesFile.close();
     } else {
-        cerr << "No se pudo abrir el archivo cities.txt" << endl;
+        cerr << "No se pudo abrir el archivo cities.conf" << endl;
     }
 }
 
-void readGuardiansFile(vector<Guardian>& guardians, Graph& graph) {
+void readGuardiansFile(vector<Guardian>& guardians) {
     ifstream guardiansFile("guardians.conf.txt");
 
     if (guardiansFile.is_open()) {
@@ -213,9 +354,6 @@ void readGuardiansFile(vector<Guardian>& guardians, Graph& graph) {
             guardian.city = city;
 
             guardians.push_back(guardian);
-
-            // Agregar al árbol binario
-            graph.addBinaryTreeNode(guardian);
         }
         guardiansFile.close();
     } else {
@@ -223,57 +361,305 @@ void readGuardiansFile(vector<Guardian>& guardians, Graph& graph) {
     }
 }
 
-int main() {
-    vector<City> citiesVector;
-    vector<Guardian> guardians;
-    Graph graph;
+void insertNode(TreeNode*& root, Guardian guardian) {
+    if (!root) {
+        root = new TreeNode(guardian, true); // El primer guardián es siempre un maestro
+        return;
+    }
 
-    readCitiesFile(citiesVector, graph);
-    readGuardiansFile(guardians, graph);
+    if (guardian.master == root->guardian.name) {
+        insertNode(root->left, guardian); // Insertar como aprendiz
+    } else if (guardian.power < root->guardian.power) {
+        insertNode(root->right, guardian);
+    } else {
+        insertNode(root->left, guardian);
+    }
+}
+
+void displayRanking(TreeNode* root) {
+    if (root == nullptr) return;
+
+    displayRanking(root->left);
+    
+    // Agregar condición para imprimir solo guardianes con poder entre 90 y 99
+    if (root->guardian.power >= 90 && root->guardian.power < 100) {
+        cout << "Nombre: " << root->guardian.name << ", Poder: " << root->guardian.power << endl;
+    }
+    
+    displayRanking(root->right);
+}
+
+void displayHierarchy(TreeNode* root, int nivel) {
+    if (root) {
+        for (int i = 0; i < nivel; ++i) {
+            cout << "  ";
+        }
+        cout << "- " << root->guardian.name << " (" << root->guardian.city << ")\n";
+
+        // Llamada recursiva para imprimir los hermanos del guardián actual
+        displayHierarchy(root->left, nivel + 1);
+        // Llamada recursiva para imprimir los aprendices del guardián actual
+        displayHierarchy(root->right, nivel + 1);
+    }
+}
+
+void deleteTree(TreeNode* root) {
+    if (root) {
+        deleteTree(root->left);
+        deleteTree(root->right);
+        delete root;
+        root = nullptr;
+    }
+}
+
+void verInformacionGuardian(const vector<Guardian>& guardians) {
+    cout << "Guardianes disponibles:" << endl;
+    for (int i = 0; i < guardians.size(); ++i) {
+        cout << i + 1 << ". " << guardians[i].name << endl;
+    }
+
+    int chosenGuardianIndex;
+    cout << "Elige el numero del guardian para ver su informacion: ";
+    cin >> chosenGuardianIndex;
+
+    if (chosenGuardianIndex >= 1 && chosenGuardianIndex <= guardians.size()) {
+        Guardian chosenGuardian = guardians[chosenGuardianIndex - 1];
+        cout << "\nInformacion del guardian seleccionado:\n" << endl;
+        cout << "Nombre: " << chosenGuardian.name << endl;
+        cout << "Poder: " << chosenGuardian.power << endl;
+        cout << "Maestro: " << chosenGuardian.master << endl;
+        cout << "Ciudad: " << chosenGuardian.city << endl;
+        // Puedes agregar más información aquí si es necesario
+    } else {
+        cout << "Numero de guardian no valido." << endl;
+    }
+}
+
+void conocerReino(UndirectedGraph& graph, const vector<Guardian>& guardians) {
+    cout << "1. Ver la lista de ciudades y sus conexiones" << endl;
+    cout << "2. Conocer las conexiones de una ciudad especifica" << endl;
+    cout << "3. Conocer conexiones entre ciudades" << endl;
+    cout << "4. Agregar nuevas conexiones entre ciudades" << endl;
 
     int opcion;
+    cout << "Ingresa tu eleccion: ";
+    cin >> opcion;
 
-    do {
-        // Menú principal
-        cout << "\nMenu:\n" << endl;
-        cout << "1. Ver la lista de candidatos" << endl;
-        cout << "2. Ver al guardian" << endl;
-        cout << "3. Conocer el reino" << endl;
-        cout << "4. Presenciar una Batalla" << endl;
-        cout << "5. Salir" << endl;
+    switch (opcion) {
+        case 1:
+            graph.printDetailedGraph();
+            break;
+        case 2:
+            cout << "Ciudades disponibles:" << endl;
+            for (size_t i = 0; i < graph.getNumberOfCities(); ++i) {
+                cout << i + 1 << ". " << graph.getCityName(i) << endl;
+            }
+
+            int cityNumber;
+            cout << "Ingresa el numero de la ciudad para conocer sus conexiones: ";
+            cin >> cityNumber;
+
+            if (cityNumber >= 1 && cityNumber <= graph.getNumberOfCities()) {
+                string cityToCheck = graph.getCityName(cityNumber - 1);
+                graph.printCityConnections(cityToCheck);
+            } else {
+                cout << "Numero de ciudad invalido." << endl;
+            }
+            break;
+        case 3:
+		    cout << "Ciudades disponibles:" << endl;
+		    for (size_t i = 0; i < graph.getNumberOfCities(); ++i) {
+		        cout << i + 1 << ". " << graph.getCityName(i) << endl;
+		    }
+		
+		    int cityNumberA, cityNumberB;
+		    cout << "Ingresa el numero de la primera ciudad: ";
+		    cin >> cityNumberA;
+		    cout << "Ingresa el numero de la segunda ciudad: ";
+		    cin >> cityNumberB;
+		
+		    if (cityNumberA >= 1 && cityNumberA <= graph.getNumberOfCities() &&
+		        cityNumberB >= 1 && cityNumberB <= graph.getNumberOfCities()) {
+		        string cityA = graph.getCityName(cityNumberA - 1);
+		        string cityB = graph.getCityName(cityNumberB - 1);
+		
+		        int weight = 1;
+		
+		        graph.isConnected(cityA, cityB);
+		    } else {
+		        cout << "Numero de ciudad(es) invalido(s)." << endl;
+		    }
+		    break;
+        case 4:
+            cout << "Agregar nueva conexion entre ciudades" << endl;
+
+            cout << "Ciudades disponibles:" << endl;
+            for (size_t i = 0; i < graph.getNumberOfCities(); ++i) {
+                cout << i + 1 << ". " << graph.getCityName(i) << endl;
+            }
+            
+            cout << "Ingresa el numero de la primera ciudad: ";
+            cin >> cityNumberA;
+            cout << "Ingresa el numero de la segunda ciudad: ";
+            cin >> cityNumberB;
+
+            if (cityNumberA >= 1 && cityNumberA <= graph.getNumberOfCities() &&
+                cityNumberB >= 1 && cityNumberB <= graph.getNumberOfCities()) {
+                string cityA = graph.getCityName(cityNumberA - 1);
+                string cityB = graph.getCityName(cityNumberB - 1);
+
+                int weight;
+                cout << "Ingresa el peso de la nueva conexion: ";
+                cin >> weight;
+
+                graph.addEdge(cityA, cityB, weight);
+            } else {
+                cout << "Numero de ciudad(es) invalido(s)." << endl;
+            }
+            break;
+        default:
+            cout << "Opcion invalida. Por favor, elige una opcion valida." << endl;
+            break;
+    }
+}
+
+void presenciarBatalla(UndirectedGraph& graph, vector<Guardian>& guardians) {
+    // Mostrar la lista de ciudades disponibles
+    cout << "Ciudades disponibles:" << endl;
+    for (size_t i = 0; i < graph.getNumberOfCities(); ++i) {
+        cout << i + 1 << ". " << graph.getCityName(i) << endl;
+    }
+
+    // Solicitar al usuario que elija una ciudad
+    int cityNumber;
+    cout << "Ingresa el número de la ciudad donde deseas presenciar la batalla: ";
+    cin >> cityNumber;
+
+    if (cityNumber >= 1 && cityNumber <= graph.getNumberOfCities()) {
+        // Obtener el nombre de la ciudad seleccionada
+        string chosenCity = graph.getCityName(cityNumber - 1);
+
+        cout << "Guardianes en la ciudad de " << chosenCity << ":" << endl;
+
+        if (graph.getMasterTreeOfCity(chosenCity) != nullptr) {
+            GuardianTreeNode* cityGuardianTree = graph.getMasterTreeOfCity(chosenCity);
+
+            // Imprimir el maestro y sus aprendices en la ciudad
+            cout << "Maestro: " << cityGuardianTree->guardian.name << " - Poder: " << cityGuardianTree->guardian.power << endl;
+            for (const auto& apprentice : cityGuardianTree->apprentices) {
+                cout << "- " << apprentice->guardian.name << " - Poder: " << apprentice->guardian.power << endl;
+            }
+
+            cout << "-------------------------------------" << endl;
+            cout << "Guardianes disponibles para la batalla:" << endl;
+
+            // Mostrar la lista de guardianes disponibles con su índice
+            cout << "1) " << cityGuardianTree->guardian.name << " (Maestro)" << endl;
+            int index = 2;
+            for (const auto& apprentice : cityGuardianTree->apprentices) {
+                cout << index << ") " << apprentice->guardian.name << " (Aprendiz)" << endl;
+                index++;
+            }
+
+            // Elige el número del guardián para la batalla
+			int chosenOpponentIndex;
+			cout << "Ingresa el número del guardián para la batalla: ";
+			cin >> chosenOpponentIndex;
+			
+			int totalGuardiansInCity = cityGuardianTree->apprentices.size() + 1;
+			
+			if (chosenOpponentIndex >= 1 && chosenOpponentIndex <= totalGuardiansInCity) {
+			    int battleResult = rand() % 10 + 1;  // Número aleatorio entre 1 y 10
+			
+			    if (battleResult >= 1 && battleResult <= 4) {
+			        // El retador pierde
+			        cout << "¡Has perdido la batalla!" << endl;
+			
+			        if (chosenOpponentIndex == 1) {
+			            // El que pierde es el Maestro
+			            cout << "Se resta 5 de poder al Maestro." << endl;
+			            cityGuardianTree->guardian.power -= 5;
+			        } else {
+			            // El que pierde es un Aprendiz
+			            cout << "Se resta 3 de poder al Aprendiz." << endl;
+			            cityGuardianTree->apprentices[chosenOpponentIndex - 2]->guardian.power -= 3;
+			        }
+			    } else {
+			        // El retador gana
+			        cout << "¡Has ganado la batalla!" << endl;
+			
+			        if (chosenOpponentIndex == 1) {
+			            // El que pierde es el Maestro
+			            cout << "Ganas 5 de poder." << endl;
+			            cityGuardianTree->guardian.power += 5;
+			        } else {
+			            // El que pierde es un Aprendiz
+			            cout << "Ganas 3 de poder." << endl;
+			            cityGuardianTree->apprentices[chosenOpponentIndex - 2]->guardian.power += 3;
+			
+			            // Robar poder al ganar la batalla
+			            if (chosenOpponentIndex == 1) {
+			                // Robar 5 de poder si se derrotó a un Maestro
+			                cout << "Robas 5 de poder al Maestro derrotado." << endl;
+			                cityGuardianTree->guardian.power -= 5;
+			            } else {
+			                // Robar 3 de poder si se derrotó a un Aprendiz
+			                cout << "Robas 3 de poder al Aprendiz derrotado." << endl;
+			                cityGuardianTree->apprentices[chosenOpponentIndex - 2]->guardian.power -= 3;
+			            }
+			        }
+			    }
+			} else {
+			    cout << "Número de guardián no válido." << endl;
+			}
+        } else {
+            cout << "No hay guardianes en esta ciudad." << endl;
+        }
+    } else {
+        cout << "Número de ciudad no válido." << endl;
+    }
+}
+
+int main() {
+	vector<City> citiesVector;
+	vector<Guardian> guardians;
+	TreeNode* rankingTree = nullptr;
+	UndirectedGraph graph;
+	
+    readCitiesFile(graph, citiesVector);
+	readGuardiansFile(guardians);
+    int opcion;
+
+    
+    for (const auto& guardian : guardians) {
+        insertNode(rankingTree, guardian);
+    }
+	
+	
+	do{
+	    // Menú principal
+	    cout << "\nMenu\n\n";
+        cout << "1. Mostar datos" << endl;
+        cout << "2. Ver la lista de candidatos" << endl;
+        cout << "3. Ver al guardian" << endl;
+        cout << "4. Conocer el reino" << endl;
+        cout << "5. Presenciar una Batalla" << endl;
+        cout << "6. Salir" << endl;
         cout << "\nIngrese su opcion: ";
         cin >> opcion;
 
         switch (opcion) {
+        	
             case 1:
-                // Lógica para ver la lista de candidatos
+                //Mostrar todos los datos
                 cout << "\nInformacion de los Guardianes\n" << endl;
                 for (const auto& guardian : guardians) {
                     cout << "Nombre: " << guardian.name << " | Poder: " << guardian.power
                          << " | Maestro: " << guardian.master << " | Ciudad: " << guardian.city << endl;
                 }
-                break;
-
-            case 2:
-                // Lógica para ver al guardian
-                cout << "Mostrar al guardian" << endl;
-
-                    // Recorrer el árbol binario en preorden
-				    cout << "\nRecorrido del arbol binario en preorden:\n";
-				    graph.traverseBinaryTreePreorder(graph.binaryTreeRoot);
-				
-				    // Recorrer el árbol binario en inorden
-				    cout << "\nRecorrido del arbol binario en inorden:\n";
-				    graph.traverseBinaryTreeInorder(graph.binaryTreeRoot);
-				
-				    // Recorrer el árbol binario en postorden
-				    cout << "\nRecorrido del arbol binario en postorden:\n";
-				    graph.traverseBinaryTreePostorder(graph.binaryTreeRoot);
-                break;
-
-            case 3:
-                // Lógica para conocer el reino
-                cout << "\nInformacion del reino\n" << endl;
+                
+                cout << "\n\nInformacion de las Ciudades\n";
+                
                 for (const auto& city : citiesVector) {
                     cout << "Nombre: " << city.name << " | Conectadas: ";
                     for (const auto& connectedCity : city.connectedCities) {
@@ -281,21 +667,47 @@ int main() {
                     }
                     cout << endl;
                 }
+                cout <<"\n\nJerarquia\n";
+                displayHierarchy(rankingTree, 0);
+
+                break;
+
+            case 2:
+                // Lógica para ver la lista de candidatos
+                cout << "\nRanking de candidatos a Guardianes (Poder entre 90 y 99)\n" << endl;
+    			displayRanking(rankingTree);
+                break;
+
+            case 3:
+                // Lógica para ver al guardian
+                cout << "Mostrar al guardian" << endl;
+                verInformacionGuardian(guardians);
+                
                 break;
 
             case 4:
-                // Lógica para presenciar una batalla
-                cout << "Presenciar una batalla" << endl;
+            	// Lógica para conocer el reino
+            	cout << "\nInformacion del reino\n" << endl;
+                conocerReino(graph, guardians);
+
                 break;
 
             case 5:
-                cout << "Saliendo del programa." << endl;
+            	// Lógica para presenciar una batalla
+                cout << "Presenciar una batalla" << endl;
+                presenciarBatalla(graph, guardians);
                 break;
+            
+            case 6:
+            	cout << "Saliendo del programa." << endl;
+            	deleteTree(rankingTree);
+            	break;
 
             default:
                 cout << "Opcion no valida. Inténtelo de nuevo." << endl;
         }
-    } while (opcion != 5);
+
+    } while (opcion != 6);
 
     return 0;
 }
